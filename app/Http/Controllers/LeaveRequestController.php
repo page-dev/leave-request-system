@@ -121,15 +121,29 @@ class LeaveRequestController extends Controller
     {
         Gate::authorize('reviewAny', LeaveRequest::class);
 
+        $search = $request->string('search')->trim()->toString();
+
         return Inertia::render('admin/leave-requests/index', [
             'leaveRequests' => LeaveRequest::query()
                 ->with(['user:id,name,email', 'leaveType', 'reviewer:id,name'])
+                ->when($search !== '', function (Builder $query) use ($search): void {
+                    $query->whereHas('user', function (Builder $query) use ($search): void {
+                        $query
+                            ->whereLike('name', "%{$search}%")
+                            ->orWhereLike('email', "%{$search}%");
+                    });
+                })
                 ->when($request->filled('status'), fn (Builder $query) => $query->where('status', $request->string('status')->toString()))
                 ->when($request->filled('leave_type_id'), fn (Builder $query) => $query->where('leave_type_id', $request->integer('leave_type_id')))
                 ->when($request->filled('user_id'), fn (Builder $query) => $query->where('user_id', $request->integer('user_id')))
                 ->latest()
                 ->get(),
             'leaveTypes' => LeaveType::query()->orderBy('name')->get(['id', 'name']),
+            'filters' => [
+                'search' => $search !== '' ? $search : null,
+                'status' => $request->filled('status') ? $request->string('status')->toString() : null,
+                'leave_type_id' => $request->filled('leave_type_id') ? $request->integer('leave_type_id') : null,
+            ],
         ]);
     }
 

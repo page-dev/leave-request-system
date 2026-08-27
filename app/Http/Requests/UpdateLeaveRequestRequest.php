@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Concerns\ValidatesLeaveRequestOverlap;
+use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,6 +11,8 @@ use Illuminate\Validation\Rule;
 
 class UpdateLeaveRequestRequest extends FormRequest
 {
+    use ValidatesLeaveRequestOverlap;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -30,5 +34,17 @@ class UpdateLeaveRequestRequest extends FormRequest
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'reason' => ['required', 'string', 'max:5000'],
         ];
+    }
+
+    /**
+     * Get the additional validation callables for the request.
+     *
+     * @return array<callable>
+     */
+    public function after(): array
+    {
+        $leaveRequest = $this->route('leave_request');
+
+        return [$this->validateLeaveRequestOverlap($leaveRequest instanceof LeaveRequest ? $leaveRequest : null)];
     }
 }

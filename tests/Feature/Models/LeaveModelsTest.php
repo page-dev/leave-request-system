@@ -50,3 +50,11 @@ test('leave requests cast dates and protect server-managed attributes', function
         ->and($leaveRequest->getAttribute('status'))->toBeNull()
         ->and($leaveRequest->getAttribute('reviewed_by'))->toBeNull();
 });
+
+test('leave requests serialize their inclusive day count', function () {
+    $leaveRequest = new LeaveRequest;
+    $leaveRequest->start_date = '2026-09-10';
+    $leaveRequest->end_date = '2026-09-14';
+
+    expect($leaveRequest->toArray()['days'])->toBe(5);
+});
