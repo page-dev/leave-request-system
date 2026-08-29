@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Concerns\ValidatesLeaveRequestLimit;
+use App\Concerns\ValidatesLeaveRequestNotice;
 use App\Concerns\ValidatesLeaveRequestOverlap;
 use App\Models\LeaveType;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -10,7 +12,7 @@ use Illuminate\Validation\Rule;
 
 class StoreLeaveRequestRequest extends FormRequest
 {
-    use ValidatesLeaveRequestOverlap;
+    use ValidatesLeaveRequestLimit, ValidatesLeaveRequestNotice, ValidatesLeaveRequestOverlap;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -42,6 +44,10 @@ class StoreLeaveRequestRequest extends FormRequest
      */
     public function after(): array
     {
-        return [$this->validateLeaveRequestOverlap()];
+        return [
+            $this->validateLeaveRequestOverlap(),
+            $this->validateLeaveRequestNotice(),
+            $this->validateLeaveRequestLimit(),
+        ];
     }
 }

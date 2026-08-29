@@ -28,16 +28,6 @@ class LeaveTypeController extends Controller
     }
 
     /**
-     * Display the leave type creation form.
-     */
-    public function create(): Response
-    {
-        Gate::authorize('create', LeaveType::class);
-
-        return Inertia::render('admin/leave-types/create');
-    }
-
-    /**
      * Store a new leave type.
      */
     public function store(StoreLeaveTypeRequest $request): RedirectResponse
@@ -49,18 +39,6 @@ class LeaveTypeController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Leave type created.')]);
 
         return to_route('admin.leave-types.index');
-    }
-
-    /**
-     * Display the leave type editing form.
-     */
-    public function edit(LeaveType $leaveType): Response
-    {
-        Gate::authorize('update', $leaveType);
-
-        return Inertia::render('admin/leave-types/edit', [
-            'leaveType' => $leaveType,
-        ]);
     }
 
     /**

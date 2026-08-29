@@ -18,7 +18,9 @@ test('seeds an administrator account idempotently', function () {
         ->where('email', 'admin@example.com')
         ->sole();
 
-    expect($administrator->name)->toBe('Administrator User')
+    expect($administrator->first_name)->toBe('Administrator')
+        ->and($administrator->last_name)->toBe('User')
+        ->and($administrator->name)->toBe('Administrator User')
         ->and($administrator->role)->toBe('administrator')
         ->and(Hash::check('password', $administrator->password))->toBeTrue();
 

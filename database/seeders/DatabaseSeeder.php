@@ -17,12 +17,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(LeaveSettingSeeder::class);
+
         $employee = User::query()->firstOrNew([
             'email' => 'employee@example.com',
         ]);
 
         $employee->forceFill([
-            'name' => 'Employee User',
+            'first_name' => 'Employee',
+            'last_name' => 'User',
             'password' => Hash::make('password'),
             'role' => 'employee',
         ])->save();
@@ -32,7 +35,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $administrator->forceFill([
-            'name' => 'Administrator User',
+            'first_name' => 'Administrator',
+            'last_name' => 'User',
             'password' => Hash::make('password'),
             'role' => 'administrator',
         ])->save();

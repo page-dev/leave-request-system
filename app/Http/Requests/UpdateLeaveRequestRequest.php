@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Concerns\ValidatesLeaveRequestLimit;
+use App\Concerns\ValidatesLeaveRequestNotice;
 use App\Concerns\ValidatesLeaveRequestOverlap;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
@@ -11,7 +13,7 @@ use Illuminate\Validation\Rule;
 
 class UpdateLeaveRequestRequest extends FormRequest
 {
-    use ValidatesLeaveRequestOverlap;
+    use ValidatesLeaveRequestLimit, ValidatesLeaveRequestNotice, ValidatesLeaveRequestOverlap;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -45,6 +47,10 @@ class UpdateLeaveRequestRequest extends FormRequest
     {
         $leaveRequest = $this->route('leave_request');
 
-        return [$this->validateLeaveRequestOverlap($leaveRequest instanceof LeaveRequest ? $leaveRequest : null)];
+        return [
+            $this->validateLeaveRequestOverlap($leaveRequest instanceof LeaveRequest ? $leaveRequest : null),
+            $this->validateLeaveRequestNotice(),
+            $this->validateLeaveRequestLimit($leaveRequest instanceof LeaveRequest ? $leaveRequest : null),
+        ];
     }
 }

@@ -1,6 +1,5 @@
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { LogOut } from 'lucide-react';
-import { useInitials } from '@/hooks/use-initials';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,6 +10,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useInitials } from '@/hooks/use-initials';
+import { logout } from '@/routes';
 
 export function LeaveRequestTopNav() {
     const { auth } = usePage().props;
@@ -49,9 +50,16 @@ export function LeaveRequestTopNav() {
                     <DropdownMenuContent align="end" className="w-52">
                         <DropdownMenuLabel>{auth.user?.name}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                            <LogOut />
-                            Log out
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href={logout()}
+                                method="post"
+                                as="button"
+                                className="w-full cursor-pointer"
+                            >
+                                <LogOut />
+                                Log out
+                            </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

@@ -18,19 +18,27 @@ export function formatDateRange(request: LeaveRequest): string {
 export function getLeaveRequestDays(
     startDate: string,
     endDate: string,
+    countedWeekdays: number[],
 ): number | null {
     if (!startDate || !endDate) {
         return null;
     }
 
-    const duration =
-        Math.floor(
-            (new Date(`${endDate}T00:00:00`).getTime() -
-                new Date(`${startDate}T00:00:00`).getTime()) /
-                86_400_000,
-        ) + 1;
+    const dates = new Date(`${startDate}T00:00:00`);
+    const finalDate = new Date(`${endDate}T00:00:00`);
+    let days = 0;
 
-    return duration > 0 ? duration : null;
+    while (dates <= finalDate) {
+        const dayOfWeek = dates.getDay() || 7;
+
+        if (countedWeekdays.includes(dayOfWeek)) {
+            days += 1;
+        }
+
+        dates.setDate(dates.getDate() + 1);
+    }
+
+    return days;
 }
 
 export function formatRelativeTime(timestamp: string): string {

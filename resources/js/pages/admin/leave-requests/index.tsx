@@ -31,6 +31,8 @@ export default function AdminLeaveRequestsIndex({
     leaveTypes: LeaveType[];
     filters: {
         search: string | null;
+        start_date: string | null;
+        end_date: string | null;
         status: string | null;
         leave_type_id: number | null;
     };
@@ -39,6 +41,8 @@ export default function AdminLeaveRequestsIndex({
         useState<AdminLeaveRequest | null>(null);
     const [isReviewing, setIsReviewing] = useState(false);
     const [search, setSearch] = useState(filters.search ?? '');
+    const [startDate, setStartDate] = useState(filters.start_date ?? '');
+    const [endDate, setEndDate] = useState(filters.end_date ?? '');
     const [status, setStatus] = useState(filters.status ?? allStatuses);
     const [leaveTypeId, setLeaveTypeId] = useState(
         filters.leave_type_id ? String(filters.leave_type_id) : allStatuses,
@@ -59,14 +63,20 @@ export default function AdminLeaveRequestsIndex({
         nextStatus: string,
         nextLeaveTypeId: string,
         nextSearch = search,
+        nextStartDate = startDate,
+        nextEndDate = endDate,
     ) => {
         setStatus(nextStatus);
         setLeaveTypeId(nextLeaveTypeId);
         setSearch(nextSearch);
+        setStartDate(nextStartDate);
+        setEndDate(nextEndDate);
         router.get(
             leaveRequestsIndex.url({
                 query: {
                     search: nextSearch.trim() || undefined,
+                    start_date: nextStartDate || undefined,
+                    end_date: nextEndDate || undefined,
                     status: nextStatus === allStatuses ? undefined : nextStatus,
                     leave_type_id:
                         nextLeaveTypeId === allStatuses
@@ -147,6 +157,28 @@ export default function AdminLeaveRequestsIndex({
                                     />
                                 </div>
                             </form>
+                            <DateRangeFilter
+                                startDate={startDate}
+                                endDate={endDate}
+                                onStartDateChange={(nextStartDate) =>
+                                    updateFilters(
+                                        status,
+                                        leaveTypeId,
+                                        search,
+                                        nextStartDate,
+                                        endDate,
+                                    )
+                                }
+                                onEndDateChange={(nextEndDate) =>
+                                    updateFilters(
+                                        status,
+                                        leaveTypeId,
+                                        search,
+                                        startDate,
+                                        nextEndDate,
+                                    )
+                                }
+                            />
                             <FilterSelect
                                 label="Status"
                                 value={status}
@@ -203,7 +235,9 @@ export default function AdminLeaveRequestsIndex({
                             </div>
                             {(status !== allStatuses ||
                                 leaveTypeId !== allStatuses ||
-                                search !== '') && (
+                                search !== '' ||
+                                startDate !== '' ||
+                                endDate !== '') && (
                                 <Button
                                     variant="outline"
                                     className="border-[#E7E5E4] bg-white text-[#292524] hover:bg-[#F5F5F4] hover:text-[#292524]"
@@ -211,6 +245,8 @@ export default function AdminLeaveRequestsIndex({
                                         updateFilters(
                                             allStatuses,
                                             allStatuses,
+                                            '',
+                                            '',
                                             '',
                                         )
                                     }
@@ -245,6 +281,61 @@ export default function AdminLeaveRequestsIndex({
                 }
             />
         </>
+    );
+}
+
+function DateRangeFilter({
+    startDate,
+    endDate,
+    onStartDateChange,
+    onEndDateChange,
+}: {
+    startDate: string;
+    endDate: string;
+    onStartDateChange: (value: string) => void;
+    onEndDateChange: (value: string) => void;
+}) {
+    return (
+        <fieldset className="grid gap-1.5">
+
+            <div className="flex gap-2">
+                <div className="grid gap-1">
+                    <label
+                        htmlFor="filter-start-date"
+                        className="text-xs font-medium text-[#78716C]"
+                    >
+                        Start date
+                    </label>
+                    <Input
+                        id="filter-start-date"
+                        type="date"
+                        value={startDate}
+                        onChange={(event) =>
+                            onStartDateChange(event.target.value)
+                        }
+                        className="w-40 border-[#E7E5E4] bg-white text-[#292524] scheme-light shadow-none focus-visible:border-[#A8A29E] focus-visible:ring-[#D6D3D1]/50"
+                    />
+                </div>
+                <div className="grid gap-1">
+                    <label
+                        htmlFor="filter-end-date"
+                        className="text-xs font-medium text-[#78716C]"
+                    >
+                        End date
+                    </label>
+                    <Input
+                        id="filter-end-date"
+                        type="date"
+                        min={startDate || undefined}
+                        value={endDate}
+                        onChange={(event) =>
+                            onEndDateChange(event.target.value)
+                        }
+                        className="w-40 border-[#E7E5E4] bg-white text-[#292524] scheme-light shadow-none focus-visible:border-[#A8A29E] focus-visible:ring-[#D6D3D1]/50"
+                    />
+                </div>
+            </div>
+        </fieldset>
     );
 }
 

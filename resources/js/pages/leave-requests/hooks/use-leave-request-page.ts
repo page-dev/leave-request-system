@@ -4,7 +4,10 @@ import { destroy } from '@/actions/App/Http/Controllers/LeaveRequestController';
 import type { LeaveRequest } from '../types';
 import { getLeaveRequestDays } from '../utils/dates';
 
-export function useLeaveRequestPage(leaveRequests: LeaveRequest[]) {
+export function useLeaveRequestPage(
+    leaveRequests: LeaveRequest[],
+    countedWeekdays: number[],
+) {
     const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(
         null,
@@ -76,7 +79,7 @@ export function useLeaveRequestPage(leaveRequests: LeaveRequest[]) {
         counts,
         featuredRequest,
         additionalPendingCount: Math.max(0, counts.pending - 1),
-        dayCount: getLeaveRequestDays(startDate, endDate),
+        dayCount: getLeaveRequestDays(startDate, endDate, countedWeekdays),
         isNewRequestOpen,
         selectedRequest,
         requestToDelete,

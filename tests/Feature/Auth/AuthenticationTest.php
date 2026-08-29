@@ -19,7 +19,7 @@ class AuthenticationTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_users_can_authenticate_using_the_login_screen()
+    public function test_employees_are_redirected_to_their_leave_requests_after_login()
     {
         $user = User::factory()->create();
 
@@ -29,7 +29,20 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('leave-requests.index', absolute: false));
+    }
+
+    public function test_administrators_are_redirected_to_the_request_review_list_after_login()
+    {
+        $administrator = User::factory()->create(['role' => 'administrator']);
+
+        $response = $this->post(route('login.store'), [
+            'email' => $administrator->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('admin.leave-requests.index', absolute: false));
     }
 
     public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge()

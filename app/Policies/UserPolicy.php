@@ -21,4 +21,20 @@ class UserPolicy
     {
         return $user->isApprover();
     }
+
+    /**
+     * Determine whether the user can create users.
+     */
+    public function create(User $user): bool
+    {
+        return $user->isApprover();
+    }
+
+    /**
+     * Determine whether the user can update a user.
+     */
+    public function update(User $user, User $model): bool
+    {
+        return $user->isApprover();
+    }
 }

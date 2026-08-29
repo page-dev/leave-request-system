@@ -25,6 +25,7 @@ import type { LeaveType } from '../types';
 
 type NewRequestDialogProps = {
     leaveTypes: LeaveType[];
+    enforceLeaveLimits: boolean;
     isOpen: boolean;
     leaveTypeId: string;
     startDate: string;
@@ -39,6 +40,7 @@ type NewRequestDialogProps = {
 
 export function NewRequestDialog({
     leaveTypes,
+    enforceLeaveLimits,
     isOpen,
     leaveTypeId,
     startDate,
@@ -69,7 +71,8 @@ export function NewRequestDialog({
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="leave_type_id">
-                                    Leave type
+                                    Leave type{' '}
+                                    <span className="text-[#E24B4A]">*</span>
                                 </Label>
                                 <input
                                     type="hidden"
@@ -93,7 +96,25 @@ export function NewRequestDialog({
                                                 value={String(leaveType.id)}
                                                 className="text-black focus:bg-[#F5F5F4] focus:text-black"
                                             >
-                                                {leaveType.name}
+                                                <span className="flex w-full items-center justify-between gap-3">
+                                                    <span>
+                                                        {leaveType.name}
+                                                    </span>
+                                                    {enforceLeaveLimits &&
+                                                        leaveType.day_limit !==
+                                                            null &&
+                                                        leaveType.day_limit !==
+                                                            undefined && (
+                                                            <span className="text-xs text-[#78716C]">
+                                                                {leaveType.used_days ??
+                                                                    0}
+                                                                /
+                                                                {
+                                                                    leaveType.day_limit
+                                                                }
+                                                            </span>
+                                                        )}
+                                                </span>
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -103,7 +124,10 @@ export function NewRequestDialog({
                             <div className="grid gap-5 sm:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="start_date">
-                                        Start date
+                                        Start date{' '}
+                                        <span className="text-[#E24B4A]">
+                                            *
+                                        </span>
                                     </Label>
                                     <Input
                                         id="start_date"
@@ -118,10 +142,14 @@ export function NewRequestDialog({
                                         className="border-[#E7E5E4] bg-white text-[#292524] scheme-light shadow-none focus-visible:border-[#A8A29E] focus-visible:ring-[#D6D3D1]/50"
                                         required
                                     />
-                                    {/* <InputError message={errors.start_date} /> */}
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="end_date">End date</Label>
+                                    <Label htmlFor="end_date">
+                                        End date{' '}
+                                        <span className="text-[#E24B4A]">
+                                            *
+                                        </span>
+                                    </Label>
                                     <Input
                                         id="end_date"
                                         name="end_date"
@@ -137,14 +165,17 @@ export function NewRequestDialog({
                                 </div>
                             </div>
 
-                            {errors.end_date && (
+                            {(errors.start_date ?? errors.end_date) && (
                                 <Card
                                     role="alert"
                                     className="border-[#E24B4A] bg-white py-0 text-[#791F1F]"
                                 >
                                     <CardContent className="flex items-start gap-3 p-3 text-sm">
                                         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                                        <p>{errors.end_date}</p>
+                                        <p>
+                                            {errors.start_date ??
+                                                errors.end_date}
+                                        </p>
                                     </CardContent>
                                 </Card>
                             )}
@@ -163,7 +194,10 @@ export function NewRequestDialog({
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="reason">Reason or notes</Label>
+                                <Label htmlFor="reason">
+                                    Reason or notes{' '}
+                                    <span className="text-[#E24B4A]">*</span>
+                                </Label>
                                 <textarea
                                     id="reason"
                                     name="reason"

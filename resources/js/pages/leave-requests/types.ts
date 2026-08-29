@@ -3,6 +3,8 @@ export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected';
 export type LeaveType = {
     id: number;
     name: string;
+    day_limit?: number | null;
+    used_days?: number;
 };
 
 export type LeaveRequest = {

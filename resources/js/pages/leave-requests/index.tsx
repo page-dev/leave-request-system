@@ -1,6 +1,15 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { index as leaveRequestsIndex } from '@/routes/leave-requests';
 import { DeleteRequestDialog } from './components/delete-request-dialog';
 import { EmptyState } from './components/empty-state';
 import { NewRequestDialog } from './components/new-request-dialog';
@@ -11,14 +20,56 @@ import { SummaryCard } from './components/summary-card';
 import { useLeaveRequestPage } from './hooks/use-leave-request-page';
 import type { LeaveRequest, LeaveType } from './types';
 
+const allStatuses = 'all';
+
 export default function LeaveRequestsIndex({
     leaveRequests,
     leaveTypes,
+    countedWeekdays,
+    enforceLeaveLimits,
+    filters,
 }: {
     leaveRequests: LeaveRequest[];
     leaveTypes: LeaveType[];
+    countedWeekdays: number[];
+    enforceLeaveLimits: boolean;
+    filters: {
+        start_date: string | null;
+        end_date: string | null;
+        status: string | null;
+        leave_type_id: number | null;
+    };
 }) {
-    const page = useLeaveRequestPage(leaveRequests);
+    const page = useLeaveRequestPage(leaveRequests, countedWeekdays);
+    const status = filters.status ?? allStatuses;
+    const leaveTypeId = filters.leave_type_id
+        ? String(filters.leave_type_id)
+        : allStatuses;
+    const startDate = filters.start_date ?? '';
+    const endDate = filters.end_date ?? '';
+
+    const updateFilters = (
+        nextStatus: string,
+        nextLeaveTypeId: string,
+        nextStartDate = startDate,
+        nextEndDate = endDate,
+    ) => {
+        router.get(
+            leaveRequestsIndex.url({
+                query: {
+                    start_date: nextStartDate || undefined,
+                    end_date: nextEndDate || undefined,
+                    status: nextStatus === allStatuses ? undefined : nextStatus,
+                    leave_type_id:
+                        nextLeaveTypeId === allStatuses
+                            ? undefined
+                            : nextLeaveTypeId,
+                },
+            }),
+            {},
+            { preserveScroll: true, preserveState: true },
+        );
+    };
 
     return (
         <>
@@ -72,9 +123,74 @@ export default function LeaveRequestsIndex({
                         </Button>
                     </div>
 
+                    <div className="flex flex-wrap items-end gap-3">
+                        <DateRangeFilter
+                            startDate={startDate}
+                            endDate={endDate}
+                            onStartDateChange={(nextStartDate) =>
+                                updateFilters(
+                                    status,
+                                    leaveTypeId,
+                                    nextStartDate,
+                                    endDate,
+                                )
+                            }
+                            onEndDateChange={(nextEndDate) =>
+                                updateFilters(
+                                    status,
+                                    leaveTypeId,
+                                    startDate,
+                                    nextEndDate,
+                                )
+                            }
+                        />
+                        <FilterSelect
+                            label="Status"
+                            value={status}
+                            onValueChange={(nextStatus) =>
+                                updateFilters(nextStatus, leaveTypeId)
+                            }
+                        >
+                            <SelectItem value={allStatuses}>
+                                All statuses
+                            </SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                        </FilterSelect>
+                        <FilterSelect
+                            label="Leave type"
+                            value={leaveTypeId}
+                            onValueChange={(nextLeaveTypeId) =>
+                                updateFilters(status, nextLeaveTypeId)
+                            }
+                        >
+                            <SelectItem value={allStatuses}>
+                                All leave types
+                            </SelectItem>
+                            {leaveTypes.map((leaveType) => (
+                                <SelectItem
+                                    key={leaveType.id}
+                                    value={String(leaveType.id)}
+                                >
+                                    {leaveType.name}
+                                </SelectItem>
+                            ))}
+                        </FilterSelect>
+                    </div>
+
                     {leaveRequests.length === 0 ? (
                         <EmptyState
                             onNewRequest={() => page.setIsNewRequestOpen(true)}
+                            hasFilters={
+                                status !== allStatuses ||
+                                leaveTypeId !== allStatuses ||
+                                startDate !== '' ||
+                                endDate !== ''
+                            }
+                            onClearFilters={() =>
+                                updateFilters(allStatuses, allStatuses, '', '')
+                            }
                         />
                     ) : (
                         <RequestsTable
@@ -88,6 +204,7 @@ export default function LeaveRequestsIndex({
 
             <NewRequestDialog
                 leaveTypes={leaveTypes}
+                enforceLeaveLimits={enforceLeaveLimits}
                 isOpen={page.isNewRequestOpen}
                 leaveTypeId={page.leaveTypeId}
                 startDate={page.startDate}
@@ -118,5 +235,86 @@ export default function LeaveRequestsIndex({
                 onConfirm={page.deleteRequest}
             />
         </>
+    );
+}
+
+function DateRangeFilter({
+    startDate,
+    endDate,
+    onStartDateChange,
+    onEndDateChange,
+}: {
+    startDate: string;
+    endDate: string;
+    onStartDateChange: (value: string) => void;
+    onEndDateChange: (value: string) => void;
+}) {
+    return (
+        <fieldset className="flex gap-2">
+            <div className="grid gap-1">
+                <label
+                    htmlFor="filter-start-date"
+                    className="text-xs font-medium text-[#78716C]"
+                >
+                    Start date
+                </label>
+                <Input
+                    id="filter-start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(event) => onStartDateChange(event.target.value)}
+                    className="w-40 border-[#E7E5E4] bg-white text-[#292524] scheme-light shadow-none focus-visible:border-[#A8A29E] focus-visible:ring-[#D6D3D1]/50"
+                />
+            </div>
+            <div className="grid gap-1">
+                <label
+                    htmlFor="filter-end-date"
+                    className="text-xs font-medium text-[#78716C]"
+                >
+                    End date
+                </label>
+                <Input
+                    id="filter-end-date"
+                    type="date"
+                    min={startDate || undefined}
+                    value={endDate}
+                    onChange={(event) => onEndDateChange(event.target.value)}
+                    className="w-40 border-[#E7E5E4] bg-white text-[#292524] scheme-light shadow-none focus-visible:border-[#A8A29E] focus-visible:ring-[#D6D3D1]/50"
+                />
+            </div>
+        </fieldset>
+    );
+}
+
+function FilterSelect({
+    label,
+    value,
+    onValueChange,
+    children,
+}: {
+    label: string;
+    value: string;
+    onValueChange: (value: string) => void;
+    children: React.ReactNode;
+}) {
+    const id = label.toLowerCase().replace(' ', '-');
+
+    return (
+        <div className="grid gap-1.5">
+            <label htmlFor={id} className="text-xs font-medium text-[#78716C]">
+                {label}
+            </label>
+            <Select value={value} onValueChange={onValueChange}>
+                <SelectTrigger
+                    id={id}
+                    className="w-44 border-[#E7E5E4] bg-white text-[#292524] shadow-none focus-visible:border-[#A8A29E] focus-visible:ring-[#D6D3D1]/50"
+                >
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-[#E7E5E4] bg-white text-[#292524]">
+                    {children}
+                </SelectContent>
+            </Select>
+        </div>
     );
 }

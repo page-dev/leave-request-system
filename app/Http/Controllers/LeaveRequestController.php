@@ -6,10 +6,14 @@ use App\Http\Requests\ReviewLeaveRequestRequest;
 use App\Http\Requests\StoreLeaveRequestRequest;
 use App\Http\Requests\UpdateLeaveRequestRequest;
 use App\Models\LeaveRequest;
+use App\Models\LeaveSetting;
 use App\Models\LeaveType;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,15 +27,36 @@ class LeaveRequestController extends Controller
     {
         Gate::authorize('viewAny', LeaveRequest::class);
 
+        $startDate = $request->string('start_date')->trim()->toString();
+        $endDate = $request->string('end_date')->trim()->toString();
+        $countedWeekdays = $this->countedWeekdays();
+        $enforceLeaveLimits = LeaveSetting::enforcesLeaveLimits();
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(403);
+        }
+
         return Inertia::render('leave-requests/index', [
-            'leaveRequests' => $request->user()
+            'leaveRequests' => $user
                 ->leaveRequests()
                 ->with('leaveType')
+                ->when($startDate !== '' && $endDate !== '', fn (Builder $query) => $query
+                    ->where('start_date', '<=', $endDate)
+                    ->where('end_date', '>=', $startDate))
                 ->when($request->filled('status'), fn (Builder $query) => $query->where('status', $request->string('status')->toString()))
                 ->when($request->filled('leave_type_id'), fn (Builder $query) => $query->where('leave_type_id', $request->integer('leave_type_id')))
                 ->latest()
                 ->get(),
-            'leaveTypes' => LeaveType::query()->orderBy('name')->get(['id', 'name']),
+            'leaveTypes' => $this->leaveTypesForUser($user, $enforceLeaveLimits, $countedWeekdays),
+            'countedWeekdays' => $countedWeekdays,
+            'enforceLeaveLimits' => $enforceLeaveLimits,
+            'filters' => [
+                'start_date' => $startDate !== '' ? $startDate : null,
+                'end_date' => $endDate !== '' ? $endDate : null,
+                'status' => $request->filled('status') ? $request->string('status')->toString() : null,
+                'leave_type_id' => $request->filled('leave_type_id') ? $request->integer('leave_type_id') : null,
+            ],
         ]);
     }
 
@@ -67,6 +92,8 @@ class LeaveRequestController extends Controller
     public function show(LeaveRequest $leaveRequest): Response
     {
         Gate::authorize('view', $leaveRequest);
+
+        $this->countedWeekdays();
 
         return Inertia::render('leave-requests/show', [
             'leaveRequest' => $leaveRequest->load(['leaveType', 'user:id,name,email', 'reviewer:id,name']),
@@ -121,7 +148,11 @@ class LeaveRequestController extends Controller
     {
         Gate::authorize('reviewAny', LeaveRequest::class);
 
+        $this->countedWeekdays();
+
         $search = $request->string('search')->trim()->toString();
+        $startDate = $request->string('start_date')->trim()->toString();
+        $endDate = $request->string('end_date')->trim()->toString();
 
         return Inertia::render('admin/leave-requests/index', [
             'leaveRequests' => LeaveRequest::query()
@@ -133,6 +164,9 @@ class LeaveRequestController extends Controller
                             ->orWhereLike('email', "%{$search}%");
                     });
                 })
+                ->when($startDate !== '' && $endDate !== '', fn (Builder $query) => $query
+                    ->where('start_date', '<=', $endDate)
+                    ->where('end_date', '>=', $startDate))
                 ->when($request->filled('status'), fn (Builder $query) => $query->where('status', $request->string('status')->toString()))
                 ->when($request->filled('leave_type_id'), fn (Builder $query) => $query->where('leave_type_id', $request->integer('leave_type_id')))
                 ->when($request->filled('user_id'), fn (Builder $query) => $query->where('user_id', $request->integer('user_id')))
@@ -141,6 +175,8 @@ class LeaveRequestController extends Controller
             'leaveTypes' => LeaveType::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'search' => $search !== '' ? $search : null,
+                'start_date' => $startDate !== '' ? $startDate : null,
+                'end_date' => $endDate !== '' ? $endDate : null,
                 'status' => $request->filled('status') ? $request->string('status')->toString() : null,
                 'leave_type_id' => $request->filled('leave_type_id') ? $request->integer('leave_type_id') : null,
             ],
@@ -189,5 +225,57 @@ class LeaveRequestController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => $status === 'approved' ? __('Leave request approved.') : __('Leave request rejected.')]);
 
         return to_route('admin.leave-requests.index');
+    }
+
+    /**
+     * Load the configured weekdays once for the current request.
+     *
+     * @return list<int>
+     */
+    private function countedWeekdays(): array
+    {
+        $countedWeekdays = LeaveSetting::countedWeekdays();
+
+        Context::add('leave.counted_weekdays', $countedWeekdays);
+
+        return $countedWeekdays;
+    }
+
+    /**
+     * Get selectable leave types with the authenticated employee's used days when limits are enforced.
+     *
+     * @param  list<int>  $countedWeekdays
+     * @return Collection<int, LeaveType>
+     */
+    private function leaveTypesForUser(User $user, bool $enforceLeaveLimits, array $countedWeekdays): Collection
+    {
+        $leaveTypes = LeaveType::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'day_limit']);
+
+        if (! $enforceLeaveLimits) {
+            return $leaveTypes;
+        }
+
+        $usedDaysByLeaveType = $user->leaveRequests()
+            ->whereIn('status', ['pending', 'approved'])
+            ->get(['leave_type_id', 'start_date', 'end_date'])
+            ->groupBy('leave_type_id')
+            ->map(fn (Collection $leaveRequests): int => $leaveRequests->sum(
+                fn (LeaveRequest $leaveRequest): int => LeaveSetting::countLeaveDays(
+                    $leaveRequest->start_date,
+                    $leaveRequest->end_date,
+                    $countedWeekdays,
+                ),
+            ));
+
+        $leaveTypes
+            ->filter(fn (LeaveType $leaveType): bool => $leaveType->day_limit !== null)
+            ->each(fn (LeaveType $leaveType) => $leaveType->setAttribute(
+                'used_days',
+                (int) ($usedDaysByLeaveType->get($leaveType->getKey()) ?? 0),
+            ));
+
+        return $leaveTypes;
     }
 }

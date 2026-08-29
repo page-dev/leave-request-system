@@ -9,11 +9,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import type { LeaveRequest } from '../types';
-import {
-    formatDate,
-    formatDateRange,
-    getLeaveRequestDays,
-} from '../utils/dates';
+import { formatDate, formatDateRange } from '../utils/dates';
 import { StatusBadge } from './status-badge';
 
 export function RequestDetailsDialog({
@@ -50,7 +46,7 @@ export function RequestDetailsDialog({
                             />
                             <Detail
                                 label="Total days"
-                                value={`${getLeaveRequestDays(request.start_date, request.end_date)} day${getLeaveRequestDays(request.start_date, request.end_date) === 1 ? '' : 's'}`}
+                                value={`${request.days} day${request.days === 1 ? '' : 's'}`}
                             />
                             <Detail
                                 label="Description"

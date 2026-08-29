@@ -20,6 +20,7 @@ class LeaveTypeFactory extends Factory
         return [
             'name' => fake()->unique()->words(2, true),
             'description' => fake()->sentence(),
+            'day_limit' => fake()->optional()->numberBetween(1, 30),
         ];
     }
 }

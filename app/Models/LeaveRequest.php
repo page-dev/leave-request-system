@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Context;
 
 #[Fillable(['leave_type_id', 'start_date', 'end_date', 'reason'])]
 class LeaveRequest extends Model
@@ -28,7 +29,11 @@ class LeaveRequest extends Model
     protected function days(): Attribute
     {
         return Attribute::make(
-            get: fn (): int => (int) $this->start_date->diffInDays($this->end_date) + 1,
+            get: fn (): int => LeaveSetting::countLeaveDays(
+                $this->start_date,
+                $this->end_date,
+                Context::get('leave.counted_weekdays', LeaveSetting::DefaultCountedWeekdays),
+            ),
         );
     }
 
