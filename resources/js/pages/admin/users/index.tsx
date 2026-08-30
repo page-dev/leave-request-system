@@ -82,6 +82,9 @@ export default function UsersIndex({
         );
     };
 
+    const hasActiveFilters =
+        status !== allFilters || role !== allFilters || search !== '';
+
     return (
         <>
             <Head title="Users" />
@@ -171,6 +174,22 @@ export default function UsersIndex({
                                     Administrator
                                 </SelectItem>
                             </FilterSelect>
+                            {hasActiveFilters && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-[#E7E5E4] bg-white text-[#292524] hover:bg-[#F5F5F4] hover:text-[#292524]"
+                                    onClick={() =>
+                                        updateFilters(
+                                            allFilters,
+                                            allFilters,
+                                            '',
+                                        )
+                                    }
+                                >
+                                    Clear filters
+                                </Button>
+                            )}
                             <Button
                                 className="bg-black text-white hover:bg-[#292524]"
                                 onClick={() => setIsCreateDialogOpen(true)}
@@ -195,23 +214,6 @@ export default function UsersIndex({
                                     user account.
                                 </p>
                             </div>
-                            {(status !== allFilters ||
-                                role !== allFilters ||
-                                search !== '') && (
-                                <Button
-                                    variant="outline"
-                                    className="border-[#E7E5E4] bg-white text-[#292524] hover:bg-[#F5F5F4] hover:text-[#292524]"
-                                    onClick={() =>
-                                        updateFilters(
-                                            allFilters,
-                                            allFilters,
-                                            '',
-                                        )
-                                    }
-                                >
-                                    Clear filters
-                                </Button>
-                            )}
                             <Button
                                 className="bg-black text-white hover:bg-[#292524]"
                                 onClick={() => setIsCreateDialogOpen(true)}

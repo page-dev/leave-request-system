@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -69,11 +71,20 @@ class UserController extends Controller
     /**
      * Store a newly created user.
      */
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(StoreUserRequest $request, AuditLogger $auditLogger): RedirectResponse
     {
         Gate::authorize('create', User::class);
 
-        User::create($request->validated());
+        DB::transaction(function () use ($request, $auditLogger): void {
+            $user = User::create($request->validated());
+
+            $auditLogger->log(
+                action: 'user.created',
+                subject: $user,
+                description: "Created user {$user->name}.",
+                newValues: $user->only(['first_name', 'last_name', 'email', 'role', 'is_active']),
+            );
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
 
@@ -83,7 +94,7 @@ class UserController extends Controller
     /**
      * Update a user.
      */
-    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    public function update(UpdateUserRequest $request, User $user, AuditLogger $auditLogger): RedirectResponse
     {
         Gate::authorize('update', $user);
 
@@ -93,7 +104,7 @@ class UserController extends Controller
             unset($data['password']);
         }
 
-        return DB::transaction(function () use ($data, $user): RedirectResponse {
+        return DB::transaction(function () use ($data, $user, $auditLogger): RedirectResponse {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
 
             if ($user->isApprover() && $data['role'] !== 'administrator' && $this->isLastActiveAdministrator($user)) {
@@ -102,7 +113,40 @@ class UserController extends Controller
                 return back();
             }
 
-            $user->update($data);
+            $user->fill($data);
+            $changes = $user->getDirty();
+            $oldValues = Arr::only($user->getOriginal(), array_keys($changes));
+            $user->save();
+
+            $safeChanges = Arr::except($changes, ['password']);
+
+            if ($safeChanges !== []) {
+                $auditLogger->log(
+                    action: 'user.updated',
+                    subject: $user,
+                    description: "Updated user {$user->name}.",
+                    oldValues: Arr::only($oldValues, array_keys($safeChanges)),
+                    newValues: $safeChanges,
+                );
+            }
+
+            if (array_key_exists('role', $changes)) {
+                $auditLogger->log(
+                    action: 'user.role_changed',
+                    subject: $user,
+                    description: "Changed {$user->name}'s role.",
+                    oldValues: ['role' => $oldValues['role']],
+                    newValues: ['role' => $changes['role']],
+                );
+            }
+
+            if (array_key_exists('password', $changes)) {
+                $auditLogger->log(
+                    action: 'user.password_reset',
+                    subject: $user,
+                    description: "Reset password for {$user->name}.",
+                );
+            }
 
             Inertia::flash('toast', ['type' => 'success', 'message' => __('User updated.')]);
 
@@ -113,7 +157,7 @@ class UserController extends Controller
     /**
      * Toggle a user's activation status while preserving administrator access.
      */
-    public function toggleActivation(Request $request, User $user): RedirectResponse
+    public function toggleActivation(Request $request, User $user, AuditLogger $auditLogger): RedirectResponse
     {
         Gate::authorize('update', $user);
 
@@ -123,7 +167,7 @@ class UserController extends Controller
             return back();
         }
 
-        return DB::transaction(function () use ($user): RedirectResponse {
+        return DB::transaction(function () use ($user, $auditLogger): RedirectResponse {
             $user = User::query()->lockForUpdate()->findOrFail($user->id);
 
             if ($user->is_active && $this->isLastActiveAdministrator($user)) {
@@ -132,7 +176,16 @@ class UserController extends Controller
                 return back();
             }
 
+            $oldActiveState = $user->is_active;
             $user->update(['is_active' => ! $user->is_active]);
+
+            $auditLogger->log(
+                action: $user->is_active ? 'user.activated' : 'user.deactivated',
+                subject: $user,
+                description: ($user->is_active ? 'Activated' : 'Deactivated')." user {$user->name}.",
+                oldValues: ['is_active' => $oldActiveState],
+                newValues: ['is_active' => $user->is_active],
+            );
 
             Inertia::flash('toast', [
                 'type' => 'success',

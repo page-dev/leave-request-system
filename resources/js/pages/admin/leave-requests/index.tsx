@@ -106,6 +106,13 @@ export default function AdminLeaveRequestsIndex({
         );
     };
 
+    const hasActiveFilters =
+        status !== allStatuses ||
+        leaveTypeId !== allStatuses ||
+        search !== '' ||
+        startDate !== '' ||
+        endDate !== '';
+
     return (
         <>
             <Head title="Request review" />
@@ -216,6 +223,24 @@ export default function AdminLeaveRequestsIndex({
                                     </SelectItem>
                                 ))}
                             </FilterSelect>
+                            {hasActiveFilters && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-[#E7E5E4] bg-white text-[#292524] hover:bg-[#F5F5F4] hover:text-[#292524]"
+                                    onClick={() =>
+                                        updateFilters(
+                                            allStatuses,
+                                            allStatuses,
+                                            '',
+                                            '',
+                                            '',
+                                        )
+                                    }
+                                >
+                                    Clear filters
+                                </Button>
+                            )}
                         </div>
                     </div>
 
@@ -233,27 +258,6 @@ export default function AdminLeaveRequestsIndex({
                                     employees submit requests.
                                 </p>
                             </div>
-                            {(status !== allStatuses ||
-                                leaveTypeId !== allStatuses ||
-                                search !== '' ||
-                                startDate !== '' ||
-                                endDate !== '') && (
-                                <Button
-                                    variant="outline"
-                                    className="border-[#E7E5E4] bg-white text-[#292524] hover:bg-[#F5F5F4] hover:text-[#292524]"
-                                    onClick={() =>
-                                        updateFilters(
-                                            allStatuses,
-                                            allStatuses,
-                                            '',
-                                            '',
-                                            '',
-                                        )
-                                    }
-                                >
-                                    Clear filters
-                                </Button>
-                            )}
                         </div>
                     ) : (
                         <ReviewRequestsTable

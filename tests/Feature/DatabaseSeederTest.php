@@ -22,7 +22,16 @@ test('seeds an administrator account idempotently', function () {
         ->and($administrator->last_name)->toBe('User')
         ->and($administrator->name)->toBe('Administrator User')
         ->and($administrator->role)->toBe('administrator')
+        ->and($administrator->is_active)->toBeTrue()
         ->and(Hash::check('password', $administrator->password))->toBeTrue();
 
     $this->assertDatabaseCount('users', 2);
+    $this->assertDatabaseHas('leave_types', [
+        'name' => 'Vacation Leave',
+        'day_limit' => 15,
+    ]);
+    $this->assertDatabaseHas('leave_types', [
+        'name' => 'Sick Leave',
+        'day_limit' => 10,
+    ]);
 });

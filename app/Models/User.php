@@ -90,6 +90,16 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * Get the audit entries recorded for actions performed by the user.
+     *
+     * @return HasMany<AuditLog, $this>
+     */
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\LeaveRequest;
 use App\Models\LeaveSetting;
 use App\Models\LeaveType;
@@ -27,6 +28,17 @@ test('administrators can select which weekdays count toward leave', function () 
         'id' => 1,
         'enforce_leave_limits' => true,
     ]);
+
+    $auditLog = AuditLog::query()->sole();
+
+    expect($auditLog->action)->toBe('leave_settings.updated')
+        ->and($auditLog->user_id)->toBe($administrator->id)
+        ->and($auditLog->subject_type)->toBe(LeaveSetting::class)
+        ->and($auditLog->new_values)->toBe([
+            'counted_weekdays' => [1, 2, 3, 4],
+            'minimum_notice_days' => 3,
+            'enforce_leave_limits' => true,
+        ]);
 
     $leaveRequest = LeaveRequest::factory()
         ->for($employee)
@@ -56,6 +68,28 @@ test('employees cannot change counted leave weekdays', function () {
         ->assertForbidden();
 
     expect(LeaveSetting::query()->exists())->toBeFalse();
+});
+
+test('updating existing leave settings records only changed values', function () {
+    $administrator = User::factory()->create(['role' => 'administrator']);
+    LeaveSetting::factory()->create([
+        'counted_weekdays' => [1, 2, 3, 4, 5],
+        'minimum_notice_days' => 3,
+        'enforce_leave_limits' => false,
+    ]);
+
+    $this->actingAs($administrator)
+        ->patch(route('admin.settings.update'), [
+            'counted_weekdays' => [1, 2, 3, 4, 5],
+            'minimum_notice_days' => 5,
+            'enforce_leave_limits' => false,
+        ])
+        ->assertRedirect(route('admin.settings.general'));
+
+    $auditLog = AuditLog::query()->sole();
+
+    expect($auditLog->old_values)->toBe(['minimum_notice_days' => 3])
+        ->and($auditLog->new_values)->toBe(['minimum_notice_days' => 5]);
 });
 
 test('counted weekdays require at least one selected day', function () {

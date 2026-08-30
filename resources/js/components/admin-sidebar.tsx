@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     ClipboardList,
+    History,
     Settings,
     ShieldCheck,
     Tags,
@@ -19,6 +20,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { index as auditLogsIndex } from '@/routes/admin/audit-logs';
 import { index as leaveRequestsIndex } from '@/routes/admin/leave-requests';
 import { index as leaveTypesIndex } from '@/routes/admin/leave-types';
 import { general } from '@/routes/admin/settings';
@@ -52,17 +54,6 @@ export function AdminSidebar() {
                             <SidebarMenuItem>
                                 <SidebarMenuButton
                                     asChild
-                                    isActive={url.startsWith('/admin/users')}
-                                >
-                                    <Link href={usersIndex()} prefetch>
-                                        <UsersRound />
-                                        <span>Users</span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    asChild
                                     isActive={url.startsWith(
                                         '/admin/leave-requests',
                                     )}
@@ -83,6 +74,28 @@ export function AdminSidebar() {
                                     <Link href={leaveTypesIndex()} prefetch>
                                         <Tags />
                                         <span>Leave types</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={url.startsWith('/admin/users')}
+                                >
+                                    <Link href={usersIndex()} prefetch>
+                                        <UsersRound />
+                                        <span>Users</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={url.startsWith('/admin/audit-logs')}
+                                >
+                                    <Link href={auditLogsIndex()} prefetch>
+                                        <History />
+                                        <span>Audit log</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

@@ -16,7 +16,6 @@ import { NewRequestDialog } from './components/new-request-dialog';
 import { RequestDetailsDialog } from './components/request-details-dialog';
 import { RequestsTable } from './components/requests-table';
 import { StatusBanner } from './components/status-banner';
-import { SummaryCard } from './components/summary-card';
 import { useLeaveRequestPage } from './hooks/use-leave-request-page';
 import type { LeaveRequest, LeaveType } from './types';
 
@@ -71,6 +70,12 @@ export default function LeaveRequestsIndex({
         );
     };
 
+    const hasActiveFilters =
+        status !== allStatuses ||
+        leaveTypeId !== allStatuses ||
+        startDate !== '' ||
+        endDate !== '';
+
     return (
         <>
             <Head title="Leave Requests" />
@@ -88,21 +93,6 @@ export default function LeaveRequestsIndex({
                             }
                         />
                     )}
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <SummaryCard
-                            label="Pending"
-                            value={page.counts.pending}
-                        />
-                        <SummaryCard
-                            label="Approved"
-                            value={page.counts.approved}
-                        />
-                        <SummaryCard
-                            label="Rejected"
-                            value={page.counts.rejected}
-                        />
-                    </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
@@ -177,20 +167,29 @@ export default function LeaveRequestsIndex({
                                 </SelectItem>
                             ))}
                         </FilterSelect>
+                        {hasActiveFilters && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="border-[#E7E5E4] bg-white text-[#292524] hover:bg-[#F5F5F4] hover:text-[#292524]"
+                                onClick={() =>
+                                    updateFilters(
+                                        allStatuses,
+                                        allStatuses,
+                                        '',
+                                        '',
+                                    )
+                                }
+                            >
+                                Clear filters
+                            </Button>
+                        )}
                     </div>
 
                     {leaveRequests.length === 0 ? (
                         <EmptyState
                             onNewRequest={() => page.setIsNewRequestOpen(true)}
-                            hasFilters={
-                                status !== allStatuses ||
-                                leaveTypeId !== allStatuses ||
-                                startDate !== '' ||
-                                endDate !== ''
-                            }
-                            onClearFilters={() =>
-                                updateFilters(allStatuses, allStatuses, '', '')
-                            }
+                            hasFilters={hasActiveFilters}
                         />
                     ) : (
                         <RequestsTable
@@ -233,6 +232,7 @@ export default function LeaveRequestsIndex({
                     }
                 }}
                 onConfirm={page.deleteRequest}
+                isDeleting={page.isDeleting}
             />
         </>
     );

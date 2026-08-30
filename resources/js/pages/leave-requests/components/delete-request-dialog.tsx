@@ -14,13 +14,22 @@ export function DeleteRequestDialog({
     request,
     onOpenChange,
     onConfirm,
+    isDeleting,
 }: {
     request: LeaveRequest | null;
     onOpenChange: (open: boolean) => void;
     onConfirm: () => void;
+    isDeleting: boolean;
 }) {
     return (
-        <Dialog open={request !== null} onOpenChange={onOpenChange}>
+        <Dialog
+            open={request !== null}
+            onOpenChange={(open) => {
+                if (!isDeleting) {
+                    onOpenChange(open);
+                }
+            }}
+        >
             <DialogContent className="bg-white text-[#292524]">
                 <DialogHeader>
                     <DialogTitle>Delete this leave request?</DialogTitle>
@@ -36,15 +45,17 @@ export function DeleteRequestDialog({
                         type="button"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
+                        disabled={isDeleting}
                     >
                         Keep request
                     </Button>
                     <Button
                         onClick={onConfirm}
+                        disabled={isDeleting}
                         className="border border-[#E24B4A] bg-white text-[#791F1F] hover:bg-[#FCEBEB] hover:text-[#791F1F]"
                     >
                         <Trash2 />
-                        Delete request
+                        {isDeleting ? 'Deleting...' : 'Delete request'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

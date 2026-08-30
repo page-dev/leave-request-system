@@ -1,5 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LogOut } from 'lucide-react';
+import { LogOut, UserRound } from 'lucide-react';
+import { useState } from 'react';
+import { EmployeeProfileDialog } from '@/components/employee-profile-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +18,7 @@ import { logout } from '@/routes';
 export function LeaveRequestTopNav() {
     const { auth } = usePage().props;
     const getInitials = useInitials();
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     return (
         <header className="border-b bg-background">
@@ -50,6 +53,13 @@ export function LeaveRequestTopNav() {
                     <DropdownMenuContent align="end" className="w-52">
                         <DropdownMenuLabel>{auth.user?.name}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            className="cursor-pointer"
+                            onSelect={() => setIsProfileOpen(true)}
+                        >
+                            <UserRound />
+                            Profile
+                        </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                             <Link
                                 href={logout()}
@@ -63,6 +73,13 @@ export function LeaveRequestTopNav() {
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+                {auth.user && (
+                    <EmployeeProfileDialog
+                        user={auth.user}
+                        open={isProfileOpen}
+                        onOpenChange={setIsProfileOpen}
+                    />
+                )}
             </nav>
         </header>
     );

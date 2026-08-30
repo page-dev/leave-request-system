@@ -1,13 +1,14 @@
 <?php
 
 use App\Http\Controllers\AdminSettingsController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', fn (): RedirectResponse => to_route('login'))->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
@@ -17,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('settings', [AdminSettingsController::class, 'index'])->name('settings.general');
         Route::patch('settings', [AdminSettingsController::class, 'update'])->name('settings.update');
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::resource('users', UserController::class)->only(['index', 'store', 'update']);
         Route::patch('users/{user}/toggle-activation', [UserController::class, 'toggleActivation'])->name('users.toggle-activation');
         Route::get('leave-types/create', fn (): RedirectResponse => to_route('admin.leave-types.index'));

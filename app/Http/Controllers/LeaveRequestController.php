@@ -9,11 +9,13 @@ use App\Models\LeaveRequest;
 use App\Models\LeaveSetting;
 use App\Models\LeaveType;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,7 +42,7 @@ class LeaveRequestController extends Controller
         return Inertia::render('leave-requests/index', [
             'leaveRequests' => $user
                 ->leaveRequests()
-                ->with('leaveType')
+                ->with(['leaveType', 'reviewer:id,name'])
                 ->when($startDate !== '' && $endDate !== '', fn (Builder $query) => $query
                     ->where('start_date', '<=', $endDate)
                     ->where('end_date', '>=', $startDate))
@@ -186,37 +188,53 @@ class LeaveRequestController extends Controller
     /**
      * Approve a pending leave request.
      */
-    public function approve(ReviewLeaveRequestRequest $request, LeaveRequest $leaveRequest): RedirectResponse
+    public function approve(ReviewLeaveRequestRequest $request, LeaveRequest $leaveRequest, AuditLogger $auditLogger): RedirectResponse
     {
-        return $this->review($request, $leaveRequest, 'approved');
+        return $this->review($request, $leaveRequest, 'approved', $auditLogger);
     }
 
     /**
      * Reject a pending leave request.
      */
-    public function reject(ReviewLeaveRequestRequest $request, LeaveRequest $leaveRequest): RedirectResponse
+    public function reject(ReviewLeaveRequestRequest $request, LeaveRequest $leaveRequest, AuditLogger $auditLogger): RedirectResponse
     {
-        return $this->review($request, $leaveRequest, 'rejected');
+        return $this->review($request, $leaveRequest, 'rejected', $auditLogger);
     }
 
     /**
      * Apply a final review decision only if the request is still pending.
      */
-    private function review(ReviewLeaveRequestRequest $request, LeaveRequest $leaveRequest, string $status): RedirectResponse
+    private function review(ReviewLeaveRequestRequest $request, LeaveRequest $leaveRequest, string $status, AuditLogger $auditLogger): RedirectResponse
     {
         Gate::authorize('review', $leaveRequest);
 
-        $updated = LeaveRequest::query()
-            ->whereKey($leaveRequest->getKey())
-            ->where('status', 'pending')
-            ->update([
+        $reviewed = DB::transaction(function () use ($request, $leaveRequest, $status, $auditLogger): bool {
+            $leaveRequest = LeaveRequest::query()->lockForUpdate()->findOrFail($leaveRequest->id);
+
+            if ($leaveRequest->status !== 'pending') {
+                return false;
+            }
+
+            $oldValues = $leaveRequest->only(['status', 'reviewed_by', 'reviewed_at', 'review_note']);
+            $leaveRequest->forceFill([
                 'status' => $status,
                 'reviewed_by' => $request->user()->id,
                 'reviewed_at' => now(),
                 'review_note' => $request->validated('review_note'),
-            ]);
+            ])->save();
 
-        if ($updated === 0) {
+            $auditLogger->log(
+                action: "leave_request.{$status}",
+                subject: $leaveRequest,
+                description: ucfirst($status)." leave request #{$leaveRequest->id}.",
+                oldValues: $oldValues,
+                newValues: $leaveRequest->only(['status', 'reviewed_by', 'reviewed_at', 'review_note']),
+            );
+
+            return true;
+        });
+
+        if (! $reviewed) {
             Inertia::flash('toast', ['type' => 'error', 'message' => __('This leave request has already been reviewed.')]);
 
             return back();

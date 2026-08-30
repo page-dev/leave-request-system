@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { destroy } from '@/actions/App/Http/Controllers/LeaveRequestController';
 import type { LeaveRequest } from '../types';
 import { getLeaveRequestDays } from '../utils/dates';
@@ -15,6 +15,8 @@ export function useLeaveRequestPage(
     const [requestToDelete, setRequestToDelete] = useState<LeaveRequest | null>(
         null,
     );
+    const [isDeleting, setIsDeleting] = useState(false);
+    const isDeleteInProgress = useRef(false);
     const [leaveTypeId, setLeaveTypeId] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -65,13 +67,20 @@ export function useLeaveRequestPage(
     }
 
     function deleteRequest(): void {
-        if (!requestToDelete) {
+        if (!requestToDelete || isDeleteInProgress.current) {
             return;
         }
+
+        isDeleteInProgress.current = true;
+        setIsDeleting(true);
 
         router.delete(destroy.url(requestToDelete.id), {
             preserveScroll: true,
             onSuccess: () => setRequestToDelete(null),
+            onFinish: () => {
+                isDeleteInProgress.current = false;
+                setIsDeleting(false);
+            },
         });
     }
 
@@ -83,6 +92,7 @@ export function useLeaveRequestPage(
         isNewRequestOpen,
         selectedRequest,
         requestToDelete,
+        isDeleting,
         leaveTypeId,
         startDate,
         endDate,

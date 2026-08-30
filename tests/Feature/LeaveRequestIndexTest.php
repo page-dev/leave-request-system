@@ -30,6 +30,28 @@ test('renders the inclusive day count for each leave request', function () {
         );
 });
 
+test('includes the approver for reviewed employee leave requests', function () {
+    $employee = User::factory()->create();
+    $approver = User::factory()->create(['role' => 'administrator']);
+    $leaveRequest = LeaveRequest::factory()
+        ->for($employee)
+        ->for(LeaveType::factory())
+        ->create([
+            'status' => 'approved',
+            'reviewed_by' => $approver->id,
+            'reviewed_at' => now(),
+        ]);
+
+    $this->actingAs($employee)
+        ->get(route('leave-requests.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('leave-requests/index')
+            ->where('leaveRequests.0.id', $leaveRequest->id)
+            ->where('leaveRequests.0.reviewer.id', $approver->id)
+            ->where('leaveRequests.0.reviewer.name', $approver->name),
+        );
+});
+
 test('shows an employee their used leave days when limits are enforced', function () {
     LeaveSetting::factory()->create([
         'enforce_leave_limits' => true,

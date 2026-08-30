@@ -78,7 +78,7 @@ export function LeaveTypeForm({
                     placeholder="e.g. 10"
                 />
                 <p className="text-sm text-[#78716C]">
-                    Leave requests are not limited by this value yet.
+                    Limit for number of days a leave can be taken.
                 </p>
                 <InputError message={errors.day_limit} />
             </div>

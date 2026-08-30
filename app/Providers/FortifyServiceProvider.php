@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Responses\RedirectToLoginLogoutResponse;
 use App\Http\Responses\RoleBasedLoginResponse;
 use App\Http\Responses\RoleBasedTwoFactorLoginResponse;
 use App\Models\User;
@@ -16,6 +17,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -28,6 +30,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LoginResponseContract::class, RoleBasedLoginResponse::class);
+        $this->app->singleton(LogoutResponseContract::class, RedirectToLoginLogoutResponse::class);
         $this->app->singleton(TwoFactorLoginResponseContract::class, RoleBasedTwoFactorLoginResponse::class);
     }
 

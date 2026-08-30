@@ -26,8 +26,10 @@ class DatabaseSeeder extends Seeder
         $employee->forceFill([
             'first_name' => 'Employee',
             'last_name' => 'User',
+            'name' => 'Employee User',
             'password' => Hash::make('password'),
             'role' => 'employee',
+            'is_active' => true,
         ])->save();
 
         $administrator = User::query()->firstOrNew([
@@ -37,18 +39,22 @@ class DatabaseSeeder extends Seeder
         $administrator->forceFill([
             'first_name' => 'Administrator',
             'last_name' => 'User',
+            'name' => 'Administrator User',
             'password' => Hash::make('password'),
             'role' => 'administrator',
+            'is_active' => true,
         ])->save();
 
         foreach ([
             [
                 'name' => 'Vacation Leave',
                 'description' => 'Planned time away from work.',
+                'day_limit' => 15,
             ],
             [
                 'name' => 'Sick Leave',
                 'description' => 'Time away needed for illness or recovery.',
+                'day_limit' => 10,
             ],
         ] as $leaveType) {
             LeaveType::query()->updateOrCreate(
