@@ -1,0 +1,16 @@
+node_modules
+vendor
+.env
+
+public/hot
+public/storage
+
+storage/*.key
+
+.phpunit.result.cache
+
+.git
+.gitignore
+
+npm-debug.log
+yarn-error.log
