@@ -5,10 +5,13 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LeaveTypeController;
 use App\Http\Controllers\UserController;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn (): RedirectResponse => to_route('login'))->name('home');
+
+Route::get('/health', fn (): JsonResponse => response()->json(['status' => 'ok']))->name('health');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
