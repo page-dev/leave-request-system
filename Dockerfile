@@ -43,7 +43,7 @@ RUN printf '<Directory /var/www/html/public>\n\
 WORKDIR /var/www/html
 
 # Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.10.2 /usr/bin/composer /usr/bin/composer
 
 # Copy application
 COPY . .
@@ -52,8 +52,9 @@ COPY . .
 RUN composer install \
     --no-dev \
     --no-interaction \
-    --prefer-dist \
-    --optimize-autoloader
+    --prefer-source \
+    --optimize-autoloader \
+    --no-progress
 
 # Install frontend dependencies and build React/Inertia/Vite
 RUN npm ci \
