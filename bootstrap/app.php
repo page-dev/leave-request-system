@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->redirectUsersTo(fn (Request $request): string => $request->user()?->isApprover()
+            ? route('admin.leave-requests.index')
+            : route('leave-requests.index'));
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [

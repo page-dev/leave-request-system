@@ -19,6 +19,24 @@ class AuthenticationTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_authenticated_employees_are_redirected_away_from_the_login_page()
+    {
+        $employee = User::factory()->create();
+
+        $this->actingAs($employee)
+            ->get(route('login'))
+            ->assertRedirect(route('leave-requests.index'));
+    }
+
+    public function test_authenticated_administrators_are_redirected_away_from_the_login_page()
+    {
+        $administrator = User::factory()->create(['role' => 'administrator']);
+
+        $this->actingAs($administrator)
+            ->get(route('login'))
+            ->assertRedirect(route('admin.leave-requests.index'));
+    }
+
     public function test_employees_are_redirected_to_their_leave_requests_after_login()
     {
         $user = User::factory()->create();
