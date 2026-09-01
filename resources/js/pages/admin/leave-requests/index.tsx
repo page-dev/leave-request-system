@@ -7,6 +7,7 @@ import {
 } from '@/actions/App/Http/Controllers/LeaveRequestController';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { alignEndDateWithStartDate } from '@/lib/date-range';
 import {
     Select,
     SelectContent,
@@ -173,7 +174,10 @@ export default function AdminLeaveRequestsIndex({
                                         leaveTypeId,
                                         search,
                                         nextStartDate,
-                                        endDate,
+                                        alignEndDateWithStartDate(
+                                            nextStartDate,
+                                            endDate,
+                                        ),
                                     )
                                 }
                                 onEndDateChange={(nextEndDate) =>

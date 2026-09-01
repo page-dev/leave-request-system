@@ -3,6 +3,7 @@ import { ClipboardList, Search } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { alignEndDateWithStartDate } from '@/lib/date-range';
 import {
     Select,
     SelectContent,
@@ -182,7 +183,13 @@ export default function AuditLogsIndex({
                                 startDate={startDate}
                                 endDate={endDate}
                                 onStartDateChange={(value) =>
-                                    visit({ startDate: value })
+                                    visit({
+                                        startDate: value,
+                                        endDate: alignEndDateWithStartDate(
+                                            value,
+                                            endDate,
+                                        ),
+                                    })
                                 }
                                 onEndDateChange={(value) =>
                                     visit({ endDate: value })

@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useMemo, useRef, useState } from 'react';
 import { destroy } from '@/actions/App/Http/Controllers/LeaveRequestController';
+import { alignEndDateWithStartDate } from '@/lib/date-range';
 import type { LeaveRequest } from '../types';
 import { getLeaveRequestDays } from '../utils/dates';
 
@@ -61,6 +62,13 @@ export function useLeaveRequestPage(
         setEndDate('');
     }
 
+    function updateStartDate(nextStartDate: string): void {
+        setStartDate(nextStartDate);
+        setEndDate((currentEndDate) =>
+            alignEndDateWithStartDate(nextStartDate, currentEndDate),
+        );
+    }
+
     function openDeleteDialog(request: LeaveRequest): void {
         setSelectedRequest(null);
         setRequestToDelete(request);
@@ -100,7 +108,7 @@ export function useLeaveRequestPage(
         setSelectedRequest,
         setRequestToDelete,
         setLeaveTypeId,
-        setStartDate,
+        updateStartDate,
         setEndDate,
         closeNewRequestDialog,
         openDeleteDialog,

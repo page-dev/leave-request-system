@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { alignEndDateWithStartDate } from '@/lib/date-range';
 import {
     Select,
     SelectContent,
@@ -122,7 +123,10 @@ export default function LeaveRequestsIndex({
                                     status,
                                     leaveTypeId,
                                     nextStartDate,
-                                    endDate,
+                                    alignEndDateWithStartDate(
+                                        nextStartDate,
+                                        endDate,
+                                    ),
                                 )
                             }
                             onEndDateChange={(nextEndDate) =>
@@ -211,7 +215,7 @@ export default function LeaveRequestsIndex({
                 dayCount={page.dayCount}
                 onOpenChange={page.setIsNewRequestOpen}
                 onLeaveTypeChange={page.setLeaveTypeId}
-                onStartDateChange={page.setStartDate}
+                onStartDateChange={page.updateStartDate}
                 onEndDateChange={page.setEndDate}
                 onSuccess={page.closeNewRequestDialog}
             />
