@@ -50,7 +50,7 @@ class AuditLogController extends Controller
             ->when($filters['start_date'] ?? null, fn (Builder $query, string $startDate) => $query->whereDate('created_at', '>=', $startDate))
             ->when($filters['end_date'] ?? null, fn (Builder $query, string $endDate) => $query->whereDate('created_at', '<=', $endDate))
             ->latest()
-            ->paginate(15)
+            ->paginate(20)
             ->withQueryString()
             ->through(fn (AuditLog $auditLog): array => [
                 'id' => $auditLog->id,

@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { Search, UserPlus, UsersRound } from 'lucide-react';
 import { useState } from 'react';
 import { toggleActivation } from '@/actions/App/Http/Controllers/UserController';
+import { PaginatedNavigation } from '@/components/paginated-navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,6 +19,7 @@ import { NewUserDialog } from './components/new-user-dialog';
 import { UsersTable } from './components/users-table';
 import { ViewUserDialog } from './components/view-user-dialog';
 import type { ManagedUser, UserRole, UserStatus } from './types';
+import type { Paginator } from '@/types/pagination';
 
 const allFilters = 'all';
 
@@ -25,15 +27,22 @@ export default function UsersIndex({
     users,
     filters,
     activeAdministratorCount,
+    userCounts,
 }: {
-    users: ManagedUser[];
+    users: Paginator<ManagedUser>;
     filters: {
         search: string | null;
         status: UserStatus | null;
         role: UserRole | null;
     };
     activeAdministratorCount: number;
+    userCounts: {
+        active: number;
+        inactive: number;
+        active_administrators: number;
+    };
 }) {
+    const paginatedUsers = users.data;
     const { auth } = usePage().props;
     const [search, setSearch] = useState(filters.search ?? '');
     const [status, setStatus] = useState(filters.status ?? allFilters);
@@ -42,12 +51,6 @@ export default function UsersIndex({
     const [userToView, setUserToView] = useState<ManagedUser | null>(null);
     const [userToEdit, setUserToEdit] = useState<ManagedUser | null>(null);
     const [togglingUserId, setTogglingUserId] = useState<number | null>(null);
-
-    const activeUserCount = users.filter((user) => user.is_active).length;
-    const inactiveUserCount = users.length - activeUserCount;
-    const filteredActiveAdministratorCount = users.filter(
-        (user) => user.is_active && user.role === 'administrator',
-    ).length;
 
     const updateFilters = (
         nextStatus: string,
@@ -93,15 +96,15 @@ export default function UsersIndex({
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <SummaryCard
                             label="Active users"
-                            value={activeUserCount}
+                            value={userCounts.active}
                         />
                         <SummaryCard
                             label="Inactive users"
-                            value={inactiveUserCount}
+                            value={userCounts.inactive}
                         />
                         <SummaryCard
                             label="Active administrators"
-                            value={filteredActiveAdministratorCount}
+                            value={userCounts.active_administrators}
                         />
                     </div>
 
@@ -200,7 +203,7 @@ export default function UsersIndex({
                         </div>
                     </div>
 
-                    {users.length === 0 ? (
+                    {paginatedUsers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-[#E7E5E4] bg-white px-6 py-16 text-center shadow-sm">
                             <div className="rounded-full bg-[#F5F5F4] p-3 text-[#57534E]">
                                 <UsersRound className="size-6" />
@@ -223,15 +226,23 @@ export default function UsersIndex({
                             </Button>
                         </div>
                     ) : (
-                        <UsersTable
-                            users={users}
-                            currentUserId={auth.user?.id ?? 0}
-                            activeAdministratorCount={activeAdministratorCount}
-                            onView={setUserToView}
-                            onEdit={setUserToEdit}
-                            onToggleActivation={toggleUserActivation}
-                            togglingUserId={togglingUserId}
-                        />
+                        <>
+                            <UsersTable
+                                users={paginatedUsers}
+                                currentUserId={auth.user?.id ?? 0}
+                                activeAdministratorCount={
+                                    activeAdministratorCount
+                                }
+                                onView={setUserToView}
+                                onEdit={setUserToEdit}
+                                onToggleActivation={toggleUserActivation}
+                                togglingUserId={togglingUserId}
+                            />
+                            <PaginatedNavigation
+                                paginator={users}
+                                ariaLabel="User pagination"
+                            />
+                        </>
                     )}
                 </div>
             </main>

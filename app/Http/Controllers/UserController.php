@@ -31,31 +31,44 @@ class UserController extends Controller
             'role' => ['nullable', 'in:employee,administrator'],
         ]);
 
-        return Inertia::render('admin/users/index', [
-            'users' => User::query()
-                ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
-                    $searchTerm = '%'.Str::lower($search).'%';
+        $users = User::query()
+            ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
+                $searchTerm = '%'.Str::lower($search).'%';
 
-                    $query->where(function (Builder $query) use ($searchTerm): void {
-                        $query
-                            ->whereRaw("LOWER(first_name || ' ' || last_name) LIKE ?", [$searchTerm])
-                            ->orWhereRaw('LOWER(first_name) LIKE ?', [$searchTerm])
-                            ->orWhereRaw('LOWER(last_name) LIKE ?', [$searchTerm])
-                            ->orWhereRaw('LOWER(email) LIKE ?', [$searchTerm]);
-                    });
-                })
-                ->when(
-                    $filters['status'] ?? null,
-                    fn (Builder $query, string $status): Builder => $query->where('is_active', $status === 'active'),
-                )
-                ->when(
-                    $filters['role'] ?? null,
-                    fn (Builder $query, string $role): Builder => $query->where('role', $role),
-                )
+                $query->where(function (Builder $query) use ($searchTerm): void {
+                    $query
+                        ->whereRaw("LOWER(first_name || ' ' || last_name) LIKE ?", [$searchTerm])
+                        ->orWhereRaw('LOWER(first_name) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(last_name) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$searchTerm]);
+                });
+            })
+            ->when(
+                $filters['status'] ?? null,
+                fn (Builder $query, string $status): Builder => $query->where('is_active', $status === 'active'),
+            )
+            ->when(
+                $filters['role'] ?? null,
+                fn (Builder $query, string $role): Builder => $query->where('role', $role),
+            );
+
+        $userCounts = [
+            'active' => (clone $users)->where('is_active', true)->count(),
+            'inactive' => (clone $users)->where('is_active', false)->count(),
+            'active_administrators' => (clone $users)
+                ->where('is_active', true)
+                ->where('role', 'administrator')
+                ->count(),
+        ];
+
+        return Inertia::render('admin/users/index', [
+            'users' => $users
                 ->orderByDesc('is_active')
                 ->orderBy('last_name')
                 ->orderBy('first_name')
-                ->get(['id', 'first_name', 'last_name', 'email', 'role', 'is_active', 'created_at', 'updated_at']),
+                ->paginate(15, ['id', 'first_name', 'last_name', 'email', 'role', 'is_active', 'created_at', 'updated_at'])
+                ->withQueryString(),
+            'userCounts' => $userCounts,
             'filters' => [
                 'search' => $filters['search'] ?? null,
                 'status' => $filters['status'] ?? null,

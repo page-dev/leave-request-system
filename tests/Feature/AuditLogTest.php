@@ -22,6 +22,22 @@ test('administrators can access the audit log page', function () {
         );
 });
 
+test('paginates audit logs in groups of twenty', function () {
+    $administrator = User::factory()->create(['role' => 'administrator']);
+
+    AuditLog::factory()->count(21)->for($administrator)->create();
+
+    $this->actingAs($administrator)
+        ->get(route('admin.audit-logs.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/audit-logs/index')
+            ->has('auditLogs.data', 20)
+            ->where('auditLogs.current_page', 1)
+            ->where('auditLogs.last_page', 2)
+            ->where('auditLogs.total', 21),
+        );
+});
+
 test('employees cannot access the audit log page', function () {
     $employee = User::factory()->create();
 

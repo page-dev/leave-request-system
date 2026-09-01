@@ -14,16 +14,9 @@ export type AuditLog = {
     } | null;
 };
 
-export type AuditLogPaginator = {
-    data: AuditLog[];
-    current_page: number;
-    last_page: number;
-    links: Array<{
-        url: string | null;
-        label: string;
-        active: boolean;
-    }>;
-};
+import type { Paginator } from '@/types/pagination';
+
+export type AuditLogPaginator = Paginator<AuditLog>;
 
 export type AuditLogFilters = {
     search: string | null;

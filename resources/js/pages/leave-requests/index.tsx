@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
+import { PaginatedNavigation } from '@/components/paginated-navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { alignEndDateWithStartDate } from '@/lib/date-range';
@@ -19,6 +20,7 @@ import { RequestsTable } from './components/requests-table';
 import { StatusBanner } from './components/status-banner';
 import { useLeaveRequestPage } from './hooks/use-leave-request-page';
 import type { LeaveRequest, LeaveType } from './types';
+import type { Paginator } from '@/types/pagination';
 
 const allStatuses = 'all';
 
@@ -29,7 +31,7 @@ export default function LeaveRequestsIndex({
     enforceLeaveLimits,
     filters,
 }: {
-    leaveRequests: LeaveRequest[];
+    leaveRequests: Paginator<LeaveRequest>;
     leaveTypes: LeaveType[];
     countedWeekdays: number[];
     enforceLeaveLimits: boolean;
@@ -40,7 +42,8 @@ export default function LeaveRequestsIndex({
         leave_type_id: number | null;
     };
 }) {
-    const page = useLeaveRequestPage(leaveRequests, countedWeekdays);
+    const requests = leaveRequests.data;
+    const page = useLeaveRequestPage(requests, countedWeekdays);
     const status = filters.status ?? allStatuses;
     const leaveTypeId = filters.leave_type_id
         ? String(filters.leave_type_id)
@@ -190,17 +193,23 @@ export default function LeaveRequestsIndex({
                         )}
                     </div>
 
-                    {leaveRequests.length === 0 ? (
+                    {requests.length === 0 ? (
                         <EmptyState
                             onNewRequest={() => page.setIsNewRequestOpen(true)}
                             hasFilters={hasActiveFilters}
                         />
                     ) : (
-                        <RequestsTable
-                            leaveRequests={leaveRequests}
-                            onView={page.setSelectedRequest}
-                            onDelete={page.openDeleteDialog}
-                        />
+                        <>
+                            <RequestsTable
+                                leaveRequests={requests}
+                                onView={page.setSelectedRequest}
+                                onDelete={page.openDeleteDialog}
+                            />
+                            <PaginatedNavigation
+                                paginator={leaveRequests}
+                                ariaLabel="Leave request pagination"
+                            />
+                        </>
                     )}
                 </div>
             </section>

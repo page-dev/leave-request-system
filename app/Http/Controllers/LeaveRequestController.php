@@ -39,17 +39,20 @@ class LeaveRequestController extends Controller
             abort(403);
         }
 
+        $leaveRequests = $user
+            ->leaveRequests()
+            ->with(['leaveType', 'reviewer:id,name'])
+            ->when($startDate !== '' && $endDate !== '', fn (Builder $query) => $query
+                ->where('start_date', '<=', $endDate)
+                ->where('end_date', '>=', $startDate))
+            ->when($request->filled('status'), fn (Builder $query) => $query->where('status', $request->string('status')->toString()))
+            ->when($request->filled('leave_type_id'), fn (Builder $query) => $query->where('leave_type_id', $request->integer('leave_type_id')));
+
         return Inertia::render('leave-requests/index', [
-            'leaveRequests' => $user
-                ->leaveRequests()
-                ->with(['leaveType', 'reviewer:id,name'])
-                ->when($startDate !== '' && $endDate !== '', fn (Builder $query) => $query
-                    ->where('start_date', '<=', $endDate)
-                    ->where('end_date', '>=', $startDate))
-                ->when($request->filled('status'), fn (Builder $query) => $query->where('status', $request->string('status')->toString()))
-                ->when($request->filled('leave_type_id'), fn (Builder $query) => $query->where('leave_type_id', $request->integer('leave_type_id')))
+            'leaveRequests' => $leaveRequests
                 ->latest()
-                ->get(),
+                ->paginate(15)
+                ->withQueryString(),
             'leaveTypes' => $this->leaveTypesForUser($user, $enforceLeaveLimits, $countedWeekdays),
             'countedWeekdays' => $countedWeekdays,
             'enforceLeaveLimits' => $enforceLeaveLimits,
@@ -156,24 +159,37 @@ class LeaveRequestController extends Controller
         $startDate = $request->string('start_date')->trim()->toString();
         $endDate = $request->string('end_date')->trim()->toString();
 
+        $leaveRequests = LeaveRequest::query()
+            ->with(['user:id,name,email', 'leaveType', 'reviewer:id,name'])
+            ->when($search !== '', function (Builder $query) use ($search): void {
+                $query->whereHas('user', function (Builder $query) use ($search): void {
+                    $query
+                        ->whereLike('name', "%{$search}%")
+                        ->orWhereLike('email', "%{$search}%");
+                });
+            })
+            ->when($startDate !== '' && $endDate !== '', fn (Builder $query) => $query
+                ->where('start_date', '<=', $endDate)
+                ->where('end_date', '>=', $startDate))
+            ->when($request->filled('status'), fn (Builder $query) => $query->where('status', $request->string('status')->toString()))
+            ->when($request->filled('leave_type_id'), fn (Builder $query) => $query->where('leave_type_id', $request->integer('leave_type_id')))
+            ->when($request->filled('user_id'), fn (Builder $query) => $query->where('user_id', $request->integer('user_id')));
+
+        $requestCounts = (clone $leaveRequests)
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
         return Inertia::render('admin/leave-requests/index', [
-            'leaveRequests' => LeaveRequest::query()
-                ->with(['user:id,name,email', 'leaveType', 'reviewer:id,name'])
-                ->when($search !== '', function (Builder $query) use ($search): void {
-                    $query->whereHas('user', function (Builder $query) use ($search): void {
-                        $query
-                            ->whereLike('name', "%{$search}%")
-                            ->orWhereLike('email', "%{$search}%");
-                    });
-                })
-                ->when($startDate !== '' && $endDate !== '', fn (Builder $query) => $query
-                    ->where('start_date', '<=', $endDate)
-                    ->where('end_date', '>=', $startDate))
-                ->when($request->filled('status'), fn (Builder $query) => $query->where('status', $request->string('status')->toString()))
-                ->when($request->filled('leave_type_id'), fn (Builder $query) => $query->where('leave_type_id', $request->integer('leave_type_id')))
-                ->when($request->filled('user_id'), fn (Builder $query) => $query->where('user_id', $request->integer('user_id')))
+            'leaveRequests' => $leaveRequests
                 ->latest()
-                ->get(),
+                ->paginate(50)
+                ->withQueryString(),
+            'requestCounts' => [
+                'pending' => (int) ($requestCounts->get('pending') ?? 0),
+                'approved' => (int) ($requestCounts->get('approved') ?? 0),
+                'rejected' => (int) ($requestCounts->get('rejected') ?? 0),
+            ],
             'leaveTypes' => LeaveType::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'search' => $search !== '' ? $search : null,

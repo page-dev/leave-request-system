@@ -5,6 +5,7 @@ import {
     approve,
     reject,
 } from '@/actions/App/Http/Controllers/LeaveRequestController';
+import { PaginatedNavigation } from '@/components/paginated-navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { alignEndDateWithStartDate } from '@/lib/date-range';
@@ -20,16 +21,19 @@ import { index as leaveRequestsIndex } from '@/routes/admin/leave-requests';
 import { ReviewRequestDialog } from './components/review-request-dialog';
 import { ReviewRequestsTable } from './components/review-requests-table';
 import type { AdminLeaveRequest, LeaveRequestStatus, LeaveType } from './types';
+import type { Paginator } from '@/types/pagination';
 
 const allStatuses = 'all';
 
 export default function AdminLeaveRequestsIndex({
     leaveRequests,
     leaveTypes,
+    requestCounts,
     filters,
 }: {
-    leaveRequests: AdminLeaveRequest[];
+    leaveRequests: Paginator<AdminLeaveRequest>;
     leaveTypes: LeaveType[];
+    requestCounts: Record<LeaveRequestStatus, number>;
     filters: {
         search: string | null;
         start_date: string | null;
@@ -49,16 +53,7 @@ export default function AdminLeaveRequestsIndex({
         filters.leave_type_id ? String(filters.leave_type_id) : allStatuses,
     );
 
-    const counts = leaveRequests.reduce(
-        (currentCounts, request) => ({
-            ...currentCounts,
-            [request.status]: currentCounts[request.status] + 1,
-        }),
-        { pending: 0, approved: 0, rejected: 0 } satisfies Record<
-            LeaveRequestStatus,
-            number
-        >,
-    );
+    const requests = leaveRequests.data;
 
     const updateFilters = (
         nextStatus: string,
@@ -123,9 +118,18 @@ export default function AdminLeaveRequestsIndex({
             >
                 <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <SummaryCard label="Pending" value={counts.pending} />
-                        <SummaryCard label="Approved" value={counts.approved} />
-                        <SummaryCard label="Rejected" value={counts.rejected} />
+                        <SummaryCard
+                            label="Pending"
+                            value={requestCounts.pending}
+                        />
+                        <SummaryCard
+                            label="Approved"
+                            value={requestCounts.approved}
+                        />
+                        <SummaryCard
+                            label="Rejected"
+                            value={requestCounts.rejected}
+                        />
                     </div>
 
                     <div className="flex flex-wrap items-end justify-between gap-4">
@@ -248,7 +252,7 @@ export default function AdminLeaveRequestsIndex({
                         </div>
                     </div>
 
-                    {leaveRequests.length === 0 ? (
+                    {requests.length === 0 ? (
                         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-[#E7E5E4] bg-white px-6 py-16 text-center shadow-sm">
                             <div className="rounded-full bg-[#F5F5F4] p-3 text-[#57534E]">
                                 <ClipboardList className="size-6" />
@@ -264,10 +268,16 @@ export default function AdminLeaveRequestsIndex({
                             </div>
                         </div>
                     ) : (
-                        <ReviewRequestsTable
-                            leaveRequests={leaveRequests}
-                            onView={setSelectedRequest}
-                        />
+                        <>
+                            <ReviewRequestsTable
+                                leaveRequests={requests}
+                                onView={setSelectedRequest}
+                            />
+                            <PaginatedNavigation
+                                paginator={leaveRequests}
+                                ariaLabel="Leave request review pagination"
+                            />
+                        </>
                     )}
                 </div>
             </section>
@@ -305,7 +315,6 @@ function DateRangeFilter({
 }) {
     return (
         <fieldset className="grid gap-1.5">
-
             <div className="flex gap-2">
                 <div className="grid gap-1">
                     <label

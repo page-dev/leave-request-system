@@ -33,14 +33,33 @@ test('renders the user management page with matching search and filters', functi
         ]))
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/users/index')
-            ->where('users.0.id', $matchingUser->id)
-            ->has('users', 1)
+            ->where('users.data.0.id', $matchingUser->id)
+            ->has('users.data', 1)
             ->where('filters.search', 'avery')
             ->where('filters.status', 'active')
             ->where('filters.role', 'employee'),
         );
 
     $this->assertModelExists($inactiveUser);
+});
+
+test('paginates users while retaining the filtered user totals', function () {
+    $administrator = User::factory()->create(['role' => 'administrator']);
+
+    User::factory()->count(15)->create(['is_active' => true]);
+
+    $this->actingAs($administrator)
+        ->get(route('admin.users.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/users/index')
+            ->has('users.data', 15)
+            ->where('users.current_page', 1)
+            ->where('users.last_page', 2)
+            ->where('users.total', 16)
+            ->where('userCounts.active', 16)
+            ->where('userCounts.inactive', 0)
+            ->where('userCounts.active_administrators', 1),
+        );
 });
 
 test('administrators can create users', function () {

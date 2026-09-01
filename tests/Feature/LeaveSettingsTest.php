@@ -51,8 +51,8 @@ test('administrators can select which weekdays count toward leave', function () 
     $this->actingAs($employee)
         ->get(route('leave-requests.index'))
         ->assertInertia(fn ($page) => $page
-            ->where('leaveRequests.0.id', $leaveRequest->id)
-            ->where('leaveRequests.0.days', 2),
+            ->where('leaveRequests.data.0.id', $leaveRequest->id)
+            ->where('leaveRequests.data.0.days', 2),
         );
 });
 

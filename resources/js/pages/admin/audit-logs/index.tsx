@@ -1,6 +1,7 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { ClipboardList, Search } from 'lucide-react';
 import { useState } from 'react';
+import { PaginatedNavigation } from '@/components/paginated-navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { alignEndDateWithStartDate } from '@/lib/date-range';
@@ -45,13 +46,15 @@ export default function AuditLogsIndex({
     const [startDate, setStartDate] = useState(filters.start_date ?? '');
     const [endDate, setEndDate] = useState(filters.end_date ?? '');
 
-    const visit = (next: Partial<{
-        search: string;
-        action: string;
-        userId: string;
-        startDate: string;
-        endDate: string;
-    }>) => {
+    const visit = (
+        next: Partial<{
+            search: string;
+            action: string;
+            userId: string;
+            startDate: string;
+            endDate: string;
+        }>,
+    ) => {
         const nextFilters = {
             search,
             action,
@@ -146,7 +149,9 @@ export default function AuditLogsIndex({
                                 id="audit-action"
                                 label="Action"
                                 value={action}
-                                onValueChange={(value) => visit({ action: value })}
+                                onValueChange={(value) =>
+                                    visit({ action: value })
+                                }
                             >
                                 <SelectItem value={allOptions}>
                                     All actions
@@ -164,7 +169,9 @@ export default function AuditLogsIndex({
                                 id="audit-administrator"
                                 label="Administrator"
                                 value={userId}
-                                onValueChange={(value) => visit({ userId: value })}
+                                onValueChange={(value) =>
+                                    visit({ userId: value })
+                                }
                             >
                                 <SelectItem value={allOptions}>
                                     All administrators
@@ -226,8 +233,8 @@ export default function AuditLogsIndex({
                                     No audit entries found
                                 </h2>
                                 <p className="mt-1 text-sm text-[#78716C]">
-                                    Administrative actions will appear here after
-                                    they are completed.
+                                    Administrative actions will appear here
+                                    after they are completed.
                                 </p>
                             </div>
                         </div>
@@ -237,7 +244,10 @@ export default function AuditLogsIndex({
                                 auditLogs={auditLogs.data}
                                 onView={setSelectedAuditLog}
                             />
-                            <Pagination auditLogs={auditLogs} />
+                            <PaginatedNavigation
+                                paginator={auditLogs}
+                                ariaLabel="Audit log pagination"
+                            />
                         </>
                     )}
                 </div>
@@ -333,42 +343,5 @@ function DateRangeFilter({
                 />
             </div>
         </fieldset>
-    );
-}
-
-function Pagination({ auditLogs }: { auditLogs: AuditLogPaginator }) {
-    if (auditLogs.last_page <= 1) {
-        return null;
-    }
-
-    return (
-        <nav aria-label="Audit log pagination" className="flex justify-center gap-1">
-            {auditLogs.links.map((link) =>
-                link.url === null ? (
-                    <span
-                        key={link.label}
-                        className="flex h-9 min-w-9 items-center justify-center rounded-md px-3 text-sm text-[#A8A29E]"
-                    >
-                        {link.label.replace(/<[^>]*>/g, '')}
-                    </span>
-                ) : (
-                    <Button
-                        key={link.label}
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        className={
-                            link.active
-                                ? 'border-[#292524] bg-[#292524] text-white hover:bg-[#44403C] hover:text-white'
-                                : 'border-[#E7E5E4] bg-white text-[#292524] hover:bg-[#F5F5F4] hover:text-[#292524]'
-                        }
-                    >
-                        <Link href={link.url} preserveScroll preserveState>
-                            {link.label.replace(/<[^>]*>/g, '')}
-                        </Link>
-                    </Button>
-                ),
-            )}
-        </nav>
     );
 }

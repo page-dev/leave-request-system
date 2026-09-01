@@ -25,8 +25,8 @@ test('renders the inclusive day count for each leave request', function () {
         ->get(route('leave-requests.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('leave-requests/index')
-            ->where('leaveRequests.0.id', $leaveRequest->id)
-            ->where('leaveRequests.0.days', 5),
+            ->where('leaveRequests.data.0.id', $leaveRequest->id)
+            ->where('leaveRequests.data.0.days', 5),
         );
 });
 
@@ -46,9 +46,30 @@ test('includes the approver for reviewed employee leave requests', function () {
         ->get(route('leave-requests.index'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('leave-requests/index')
-            ->where('leaveRequests.0.id', $leaveRequest->id)
-            ->where('leaveRequests.0.reviewer.id', $approver->id)
-            ->where('leaveRequests.0.reviewer.name', $approver->name),
+            ->where('leaveRequests.data.0.id', $leaveRequest->id)
+            ->where('leaveRequests.data.0.reviewer.id', $approver->id)
+            ->where('leaveRequests.data.0.reviewer.name', $approver->name),
+        );
+});
+
+test('paginates employee leave requests', function () {
+    $employee = User::factory()->create();
+    $leaveType = LeaveType::factory()->create();
+
+    LeaveRequest::factory()
+        ->count(16)
+        ->for($employee)
+        ->for($leaveType)
+        ->create();
+
+    $this->actingAs($employee)
+        ->get(route('leave-requests.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('leave-requests/index')
+            ->has('leaveRequests.data', 15)
+            ->where('leaveRequests.current_page', 1)
+            ->where('leaveRequests.last_page', 2)
+            ->where('leaveRequests.total', 16),
         );
 });
 
@@ -117,8 +138,8 @@ test('filters only the authenticated employee requests by status, leave type, an
             ->where('filters.end_date', '2026-09-15')
             ->where('filters.status', 'pending')
             ->where('filters.leave_type_id', $leaveType->id)
-            ->has('leaveRequests', 1)
-            ->where('leaveRequests.0.id', $matchingRequest->id),
+            ->has('leaveRequests.data', 1)
+            ->where('leaveRequests.data.0.id', $matchingRequest->id),
         );
 });
 
@@ -143,6 +164,29 @@ test('returns the selected filters for the administrative review list', function
         );
 });
 
+test('paginates administrative leave requests in groups of fifty', function () {
+    $administrator = User::factory()->create(['role' => 'administrator']);
+    $employee = User::factory()->create();
+    $leaveType = LeaveType::factory()->create();
+
+    LeaveRequest::factory()
+        ->count(51)
+        ->for($employee)
+        ->for($leaveType)
+        ->create(['status' => 'pending']);
+
+    $this->actingAs($administrator)
+        ->get(route('admin.leave-requests.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/leave-requests/index')
+            ->has('leaveRequests.data', 50)
+            ->where('leaveRequests.current_page', 1)
+            ->where('leaveRequests.last_page', 2)
+            ->where('leaveRequests.total', 51)
+            ->where('requestCounts.pending', 51),
+        );
+});
+
 test('searches the administrative review list by employee name or email', function () {
     $administrator = User::factory()->create(['role' => 'administrator']);
     $matchingEmployee = User::factory()->create([
@@ -162,8 +206,8 @@ test('searches the administrative review list by employee name or email', functi
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/leave-requests/index')
             ->where('filters.search', 'taylor@example.test')
-            ->has('leaveRequests', 1)
-            ->where('leaveRequests.0.id', $matchingRequest->id),
+            ->has('leaveRequests.data', 1)
+            ->where('leaveRequests.data.0.id', $matchingRequest->id),
         );
 });
 
@@ -213,9 +257,9 @@ test('returns administrative leave requests that overlap the selected date range
             ->component('admin/leave-requests/index')
             ->where('filters.start_date', '2026-09-01')
             ->where('filters.end_date', '2026-09-15')
-            ->has('leaveRequests', 3)
-            ->where('leaveRequests.0.id', $touchingEnd->id)
-            ->where('leaveRequests.1.id', $withinRange->id)
-            ->where('leaveRequests.2.id', $overlappingStart->id),
+            ->has('leaveRequests.data', 3)
+            ->where('leaveRequests.data.0.id', $touchingEnd->id)
+            ->where('leaveRequests.data.1.id', $withinRange->id)
+            ->where('leaveRequests.data.2.id', $overlappingStart->id),
         );
 });
