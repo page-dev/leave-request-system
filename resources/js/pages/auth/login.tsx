@@ -24,7 +24,7 @@ export default function Login({ status }: Props) {
             >
                 {({ processing, errors }) => (
                     <>
-                        <h1 className="text-center text-2xl font-semibold tracking-tight mb-5">
+                        <h1 className="mb-5 text-center text-2xl font-semibold tracking-tight">
                             Leave Request System
                         </h1>
 
@@ -67,6 +67,18 @@ export default function Login({ status }: Props) {
                                 {processing && <Spinner />}
                                 Log in
                             </Button>
+
+                            <div className="rounded-md border border-[#E7E5E4] bg-[#FAFAF9] px-3 py-2 text-center text-xs text-[#78716C]">
+                                <p className="font-medium">Sample accounts</p>
+                                <p>
+                                    Employee: employee@example.com · Password:
+                                    password
+                                </p>
+                                <p>
+                                    Administrator: admin@example.com · Password:
+                                    password
+                                </p>
+                            </div>
                         </div>
                     </>
                 )}
