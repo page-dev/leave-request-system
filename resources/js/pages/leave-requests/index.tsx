@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 import { PaginatedNavigation } from '@/components/paginated-navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { alignEndDateWithStartDate } from '@/lib/date-range';
 import {
     Select,
     SelectContent,
@@ -11,7 +10,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { alignEndDateWithStartDate } from '@/lib/date-range';
 import { index as leaveRequestsIndex } from '@/routes/leave-requests';
+import type { Paginator } from '@/types/pagination';
 import { DeleteRequestDialog } from './components/delete-request-dialog';
 import { EmptyState } from './components/empty-state';
 import { NewRequestDialog } from './components/new-request-dialog';
@@ -20,7 +21,6 @@ import { RequestsTable } from './components/requests-table';
 import { StatusBanner } from './components/status-banner';
 import { useLeaveRequestPage } from './hooks/use-leave-request-page';
 import type { LeaveRequest, LeaveType } from './types';
-import type { Paginator } from '@/types/pagination';
 
 const allStatuses = 'all';
 
