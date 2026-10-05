@@ -8,7 +8,6 @@ import {
 import { PaginatedNavigation } from '@/components/paginated-navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { alignEndDateWithStartDate } from '@/lib/date-range';
 import {
     Select,
     SelectContent,
@@ -16,12 +15,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { alignEndDateWithStartDate } from '@/lib/date-range';
 import { SummaryCard } from '@/pages/leave-requests/components/summary-card';
 import { index as leaveRequestsIndex } from '@/routes/admin/leave-requests';
+import type { Paginator } from '@/types/pagination';
 import { ReviewRequestDialog } from './components/review-request-dialog';
 import { ReviewRequestsTable } from './components/review-requests-table';
 import type { AdminLeaveRequest, LeaveRequestStatus, LeaveType } from './types';
-import type { Paginator } from '@/types/pagination';
 
 const allStatuses = 'all';
 
